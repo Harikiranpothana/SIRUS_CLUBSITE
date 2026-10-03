@@ -13,30 +13,9 @@ const dashboardSections = [
     description: "Your attendance records and participation history will appear here.",
     href: "/dashboard/attendance",
   },
-  {
-    number: "03",
-    title: "RESEARCH",
-    description: "Track your research work, publications, patents and projects.",
-    href: "/dashboard/research",
-  },
-  {
-    number: "04",
-    title: "TEAMS",
-    description: "Access your project teams and collaborative workspaces.",
-    href: "/dashboard/teams",
-  },
-  {
-    number: "05",
-    title: "CERTIFICATES",
-    description: "Access certificates earned through S.I.R.U.S. activities.",
-    href: "/dashboard/certificates",
-  },
-  {
-    number: "06",
-    title: "RESOURCES",
-    description: "Explore research material and resources shared by the club.",
-    href: "/dashboard/resources",
-  },
+
+  
+
 ];
 
 export default function StudentDashboard() {

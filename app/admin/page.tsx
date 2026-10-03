@@ -41,22 +41,7 @@ const adminModules = [
     href: "/admin/gallery",
     adminOnly: false,
   },
-  {
-    number: "06",
-    title: "CERTIFICATES",
-    description:
-      "Manage certificates generated for eligible S.I.R.U.S. activities.",
-    href: "/admin/certificates",
-    adminOnly: true,
-  },
-  {
-    number: "07",
-    title: "ANALYTICS",
-    description:
-      "Review club activity and participation data.",
-    href: "/admin/analytics",
-    adminOnly: true,
-  },
+
 ];
 
 export default function AdminDashboard() {
@@ -185,18 +170,7 @@ export default function AdminDashboard() {
 
             <p>
               Administrators manage applications, members, attendance,
-              certificates, events, gallery and club analytics.
-            </p>
-          </div>
-
-          <div className="role-panel">
-            <span>ROLE / FACULTY</span>
-
-            <h3>Activity management access.</h3>
-
-            <p>
-              Faculty can manage members, events and gallery content, while
-              application and attendance management remain restricted.
+              events, gallery and club analytics.
             </p>
           </div>
         </div>
