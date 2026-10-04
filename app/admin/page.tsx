@@ -3,45 +3,32 @@ import Link from "next/link";
 const adminModules = [
   {
     number: "01",
-    title: "APPLICATIONS",
+    title: "MEMBERS",
     description:
-      "Review and manage student applications to join S.I.R.U.S.",
-    href: "/admin/applications",
-    adminOnly: true,
+      "Review student onboarding requests and manage approved S.I.R.U.S. students.",
+    href: "/admin/members",
   },
   {
     number: "02",
-    title: "MEMBERS",
+    title: "EVENTS",
     description:
-      "View and manage the registered S.I.R.U.S. member directory.",
-    href: "/admin/members",
-    adminOnly: false,
+      "Create, publish, edit and manage events across the S.I.R.U.S. portal.",
+    href: "/admin/events",
   },
   {
     number: "03",
     title: "ATTENDANCE",
     description:
-      "Create attendance sessions, manage QR attendance and review records.",
+      "Create attendance sessions, generate QR codes and review attendance records.",
     href: "/admin/attendance",
-    adminOnly: true,
   },
   {
     number: "04",
-    title: "EVENTS",
-    description:
-      "Create, edit and manage events displayed across the S.I.R.U.S. portal.",
-    href: "/admin/events",
-    adminOnly: false,
-  },
-  {
-    number: "05",
     title: "GALLERY",
     description:
-      "Upload and manage photographs and media from S.I.R.U.S. activities.",
+      "Upload, organize and publish photographs and media from S.I.R.U.S. activities.",
     href: "/admin/gallery",
-    adminOnly: false,
   },
-
 ];
 
 export default function AdminDashboard() {
@@ -51,7 +38,7 @@ export default function AdminDashboard() {
       <section className="admin-header">
         <div>
           <span className="admin-eyebrow">
-            S.I.R.U.S. / MANAGEMENT PORTAL
+            S.I.R.U.S. / ADMINISTRATION
           </span>
 
           <h1>
@@ -61,14 +48,14 @@ export default function AdminDashboard() {
           </h1>
 
           <p>
-            Manage the systems, activities and member operations that keep
-            S.I.R.U.S. moving.
+            Manage students, events, attendance and media across the
+            S.I.R.U.S. platform.
           </p>
         </div>
 
         <div className="admin-status">
           <span className="admin-status-dot" />
-          <span>MANAGEMENT PORTAL</span>
+          <span>ADMIN ACCESS</span>
         </div>
       </section>
 
@@ -86,27 +73,27 @@ export default function AdminDashboard() {
 
         <div className="admin-overview-grid">
           <div className="admin-stat">
-            <span>MEMBERS</span>
+            <span>STUDENTS</span>
             <strong>—</strong>
-            <small>Awaiting member data</small>
+            <small>Database data</small>
           </div>
 
           <div className="admin-stat">
-            <span>PENDING APPLICATIONS</span>
+            <span>PENDING ONBOARDING</span>
             <strong>—</strong>
-            <small>Awaiting application data</small>
+            <small>Awaiting approval</small>
           </div>
 
           <div className="admin-stat">
             <span>EVENTS</span>
             <strong>—</strong>
-            <small>Awaiting event data</small>
+            <small>Database data</small>
           </div>
 
           <div className="admin-stat">
             <span>ATTENDANCE</span>
             <strong>—</strong>
-            <small>Awaiting attendance data</small>
+            <small>Database data</small>
           </div>
         </div>
       </section>
@@ -132,12 +119,7 @@ export default function AdminDashboard() {
             >
               <div className="admin-module-top">
                 <span>{module.number}</span>
-
-                {module.adminOnly ? (
-                  <span className="admin-only-label">ADMIN</span>
-                ) : (
-                  <span>↗</span>
-                )}
+                <span>↗</span>
               </div>
 
               <div className="admin-module-content">
@@ -150,15 +132,15 @@ export default function AdminDashboard() {
         </div>
       </section>
 
-      {/* Role Information */}
+      {/* Administrative Access */}
       <section className="admin-access">
         <div className="admin-section-heading">
-          <span>03 / ACCESS CONTROL</span>
+          <span>03 / ACCESS</span>
 
           <h2>
-            Role-based
+            Administrative
             <br />
-            operations.
+            control.
           </h2>
         </div>
 
@@ -166,17 +148,17 @@ export default function AdminDashboard() {
           <div className="role-panel">
             <span>ROLE / ADMIN</span>
 
-            <h3>Full management access.</h3>
+            <h3>Authorized management access.</h3>
 
             <p>
-              Administrators manage applications, members, attendance,
-              events, gallery and club analytics.
+              Administrators can review student onboarding, manage events,
+              control attendance sessions and manage published gallery media.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Empty Activity */}
+      {/* Activity */}
       <section className="admin-activity">
         <div className="admin-section-heading compact">
           <span>04 / ACTIVITY</span>
@@ -190,8 +172,7 @@ export default function AdminDashboard() {
           <h3>No activity available.</h3>
 
           <p>
-            Administrative actions, event updates, application decisions and
-            other system activity will appear here once the backend is
+            Administrative activity will appear here once the backend is
             connected.
           </p>
         </div>
@@ -199,7 +180,7 @@ export default function AdminDashboard() {
 
       {/* Footer */}
       <section className="admin-footer">
-        <span>S.I.R.U.S. / MANAGEMENT PORTAL</span>
+        <span>S.I.R.U.S. / ADMINISTRATION</span>
 
         <p>
           Research.

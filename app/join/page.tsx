@@ -1,22 +1,100 @@
-import Link from "next/link";
+"use client";
+
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-
-const interestOptions = [
-  "Artificial Intelligence",
-  "Machine Learning",
-  "Computer Vision",
-  "Research",
-  "IoT",
-  "Other",
-];
+import { FormEvent, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 export default function JoinPage() {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [vtuId, setVtuId] = useState("");
+  const [yearOfStudy, setYearOfStudy] = useState("");
+
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    setLoading(true);
+    setSuccess(false);
+    setError("");
+
+    const supabase = createClient();
+
+    const cleanedName = name.trim();
+    const cleanedPhone = phone.trim();
+    const cleanedVtuId = vtuId.trim();
+    const year = Number(yearOfStudy);
+
+    // Basic required-field validation
+    if (!cleanedName || !cleanedPhone || !cleanedVtuId || !yearOfStudy) {
+      setError("Please complete all required fields.");
+      setLoading(false);
+      return;
+    }
+
+    // VTU number must contain numbers only
+    if (!/^\d+$/.test(cleanedVtuId)) {
+      setError("VTU number must contain numbers only.");
+      setLoading(false);
+      return;
+    }
+
+    // Year validation
+    if (![1, 2, 3, 4].includes(year)) {
+      setError("Please select a valid year of study.");
+      setLoading(false);
+      return;
+    }
+
+    const { error: insertError } = await supabase
+      .from("students")
+      .insert({
+        name: cleanedName,
+        phone: cleanedPhone,
+        vtu_id: cleanedVtuId,
+        year_of_study: year,
+        status: "pending",
+      });
+
+    if (insertError) {
+      console.error("Student onboarding error:", insertError);
+
+      // Duplicate VTU number
+      if (insertError.code === "23505") {
+        setError(
+          "An onboarding request already exists for this VTU number."
+        );
+      } else {
+        setError(
+          "Unable to submit your onboarding request. Please try again."
+        );
+      }
+
+      setLoading(false);
+      return;
+    }
+
+    // Successful submission
+    setSuccess(true);
+
+    setName("");
+    setPhone("");
+    setVtuId("");
+    setYearOfStudy("");
+
+    setLoading(false);
+  }
+
   return (
     <>
       <Navbar />
 
       <main className="join-page">
+        {/* HERO */}
         <section className="join-hero">
           <div className="wide-container join-hero-inner">
             <div className="join-hero-content">
@@ -29,34 +107,35 @@ export default function JoinPage() {
               </h1>
 
               <p className="join-hero-description">
-                S.I.R.U.S. is a research and innovation community built around
-                curiosity, experimentation, collaboration, and meaningful
-                technical work.
+                Become part of S.I.R.U.S. and take part in research,
+                experimentation, technical projects, and innovation.
               </p>
             </div>
 
             <div className="join-coordinate">
-              <span>APPLICATION</span>
+              <span>ONBOARDING</span>
               <span>01 / 01</span>
             </div>
           </div>
         </section>
 
+        {/* FORM */}
         <section className="join-form-section">
           <div className="wide-container">
             <div className="join-section-header">
               <div>
-                <span className="section-index">01 — APPLICATION</span>
+                <span className="section-index">01 — ONBOARDING</span>
                 <h2>Tell us about yourself.</h2>
               </div>
 
               <p>
-                Complete the application below. Your information will be
-                reviewed by the S.I.R.U.S. faculty or administration team.
+                Enter your basic details below. Your onboarding request will
+                be reviewed by an authorized S.I.R.U.S. administrator.
               </p>
             </div>
 
-            <form className="join-form">
+            <form className="join-form" onSubmit={handleSubmit}>
+              {/* IDENTITY */}
               <div className="join-form-block">
                 <div className="join-block-label">
                   <span>01</span>
@@ -64,40 +143,42 @@ export default function JoinPage() {
                 </div>
 
                 <div className="join-fields">
+                  {/* NAME */}
                   <label>
-                    <span>FULL NAME</span>
+                    <span>NAME</span>
+
                     <input
                       type="text"
-                      name="fullName"
+                      name="name"
                       placeholder="Your full name"
                       autoComplete="name"
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
                       required
+                      disabled={loading}
                     />
                   </label>
 
+                  {/* MOBILE */}
                   <label>
-                    <span>COLLEGE EMAIL</span>
-                    <input
-                      type="email"
-                      name="email"
-                      placeholder="you@college.edu"
-                      autoComplete="email"
-                      required
-                    />
-                  </label>
+                    <span>MOBILE NUMBER</span>
 
-                  <label>
-                    <span>PHONE NUMBER</span>
                     <input
                       type="tel"
                       name="phone"
-                      placeholder="Your phone number"
+                      placeholder="Your mobile number"
                       autoComplete="tel"
+                      inputMode="numeric"
+                      value={phone}
+                      onChange={(event) => setPhone(event.target.value)}
+                      required
+                      disabled={loading}
                     />
                   </label>
                 </div>
               </div>
 
+              {/* ACADEMICS */}
               <div className="join-form-block">
                 <div className="join-block-label">
                   <span>02</span>
@@ -105,22 +186,44 @@ export default function JoinPage() {
                 </div>
 
                 <div className="join-fields">
+                  {/* VTU NUMBER */}
                   <label>
-                    <span>DEPARTMENT</span>
+                    <span>VTU NUMBER</span>
+
                     <input
                       type="text"
-                      name="department"
-                      placeholder="Your department"
+                      name="vtu_id"
+                      placeholder="Enter your VTU number"
+                      inputMode="numeric"
+                      pattern="[0-9]+"
+                      value={vtuId}
+                      onChange={(event) => {
+                        // Allow numbers only
+                        const value = event.target.value.replace(/\D/g, "");
+                        setVtuId(value);
+                      }}
                       required
+                      disabled={loading}
                     />
                   </label>
 
+                  {/* YEAR */}
                   <label>
-                    <span>YEAR</span>
-                    <select name="year" defaultValue="" required>
+                    <span>YEAR OF STUDY</span>
+
+                    <select
+                      name="year_of_study"
+                      value={yearOfStudy}
+                      onChange={(event) =>
+                        setYearOfStudy(event.target.value)
+                      }
+                      required
+                      disabled={loading}
+                    >
                       <option value="" disabled>
                         Select your year
                       </option>
+
                       <option value="1">First Year</option>
                       <option value="2">Second Year</option>
                       <option value="3">Third Year</option>
@@ -130,107 +233,47 @@ export default function JoinPage() {
                 </div>
               </div>
 
-              <div className="join-form-block">
-                <div className="join-block-label">
-                  <span>03</span>
-                  <strong>INTERESTS</strong>
+              {/* ERROR */}
+              {error && (
+                <div className="login-error" role="alert">
+                  {error}
                 </div>
+              )}
 
-                <div className="join-fields">
-                  <fieldset className="join-interest-field">
-                    <legend>AREAS OF INTEREST</legend>
+              {/* SUCCESS */}
+              {success && (
+                <div className="join-success" role="status">
+                  <span>ONBOARDING SUBMITTED</span>
 
-                    <div className="join-interest-grid">
-                      {interestOptions.map((interest) => (
-                        <label key={interest} className="join-interest-option">
-                          <input
-                            type="checkbox"
-                            name="interests"
-                            value={interest}
-                          />
-                          <span>{interest}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </fieldset>
-
-                  <label>
-                    <span>SKILLS</span>
-                    <textarea
-                      name="skills"
-                      placeholder="Languages, frameworks, tools, research skills..."
-                      rows={5}
-                    />
-                  </label>
+                  <p>
+                    Your request has been submitted successfully and is now
+                    pending administrator review.
+                  </p>
                 </div>
-              </div>
+              )}
 
-              <div className="join-form-block">
-                <div className="join-block-label">
-                  <span>04</span>
-                  <strong>EXPERIENCE</strong>
-                </div>
-
-                <div className="join-fields">
-                  <label>
-                    <span>GITHUB</span>
-                    <input
-                      type="url"
-                      name="githubUrl"
-                      placeholder="https://github.com/..."
-                    />
-                  </label>
-
-                  <label>
-                    <span>LINKEDIN</span>
-                    <input
-                      type="url"
-                      name="linkedinUrl"
-                      placeholder="https://linkedin.com/in/..."
-                    />
-                  </label>
-
-                  <label className="join-full-field">
-                    <span>PROJECT / RESEARCH EXPERIENCE</span>
-                    <textarea
-                      name="experience"
-                      placeholder="Tell us briefly about projects, research, competitions, or other technical work..."
-                      rows={6}
-                    />
-                  </label>
-                </div>
-              </div>
-
-              <div className="join-form-block">
-                <div className="join-block-label">
-                  <span>05</span>
-                  <strong>MOTIVATION</strong>
-                </div>
-
-                <div className="join-fields">
-                  <label className="join-full-field">
-                    <span>WHY S.I.R.U.S.?</span>
-                    <textarea
-                      name="motivation"
-                      placeholder="What do you want to explore, build, or contribute?"
-                      rows={7}
-                      required
-                    />
-                  </label>
-                </div>
-              </div>
-
+              {/* SUBMIT */}
               <div className="join-submit-area">
                 <div>
-                  <span className="join-submit-index">APPLICATION / READY</span>
+                  <span className="join-submit-index">
+                    ONBOARDING / PENDING REVIEW
+                  </span>
+
                   <p>
-                    Applications are reviewed by authorized S.I.R.U.S.
-                    administrators and faculty.
+                    Your details will remain pending until an authorized
+                    S.I.R.U.S. administrator approves your onboarding.
                   </p>
                 </div>
 
-                <button type="submit" className="join-submit">
-                  <span>SUBMIT APPLICATION</span>
+                <button
+                  type="submit"
+                  className="join-submit"
+                  disabled={loading}
+                >
+                  <span>
+                    {loading ? "SUBMITTING..." : "SUBMIT ONBOARDING"}
+                  </span>
+
                   <strong>↗</strong>
                 </button>
               </div>
@@ -238,62 +281,65 @@ export default function JoinPage() {
           </div>
         </section>
 
+        {/* PROCESS */}
         <section className="join-process">
           <div className="wide-container">
             <div className="join-section-header">
               <div>
-                <span className="section-index">06 — PROCESS</span>
+                <span className="section-index">02 — PROCESS</span>
+
                 <h2>What happens next.</h2>
               </div>
             </div>
 
             <div className="join-process-grid">
+              {/* STEP 01 */}
               <article>
                 <span>01</span>
-                <h3>APPLY</h3>
-                <p>Submit your application through the S.I.R.U.S. portal.</p>
-              </article>
 
-              <article>
-                <span>02</span>
-                <h3>REVIEW</h3>
-                <p>
-                  Your application is reviewed by an authorized faculty or
-                  administrator.
-                </p>
-              </article>
+                <h3>SUBMIT</h3>
 
-              <article>
-                <span>03</span>
-                <h3>DECISION</h3>
                 <p>
-                  You receive an application status through the portal.
-                </p>
-              </article>
-
-              <article>
-                <span>04</span>
-                <h3>MEMBER</h3>
-                <p>
-                  Accepted applicants receive access to the S.I.R.U.S. member
+                  Submit your basic details through the S.I.R.U.S. onboarding
                   portal.
                 </p>
               </article>
-            </div>
-          </div>
-        </section>
 
-        <section className="join-login">
-          <div className="wide-container">
-            <div className="join-login-inner">
-              <div>
-                <span className="section-index">ALREADY APPLIED?</span>
-                <h2>Check your application.</h2>
-              </div>
+              {/* STEP 02 */}
+              <article>
+                <span>02</span>
 
-              <Link href="/login" className="join-login-link">
-                MEMBER LOGIN <span>↗</span>
-              </Link>
+                <h3>REVIEW</h3>
+
+                <p>
+                  An authorized S.I.R.U.S. administrator reviews your
+                  onboarding request.
+                </p>
+              </article>
+
+              {/* STEP 03 */}
+              <article>
+                <span>03</span>
+
+                <h3>DECISION</h3>
+
+                <p>
+                  Your onboarding request is either approved or rejected by
+                  the administrator.
+                </p>
+              </article>
+
+              {/* STEP 04 */}
+              <article>
+                <span>04</span>
+
+                <h3>APPROVED</h3>
+
+                <p>
+                  Once approved, you become an authorized S.I.R.U.S. student
+                  member.
+                </p>
+              </article>
             </div>
           </div>
         </section>

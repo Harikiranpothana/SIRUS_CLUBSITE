@@ -4,18 +4,17 @@ const dashboardSections = [
   {
     number: "01",
     title: "EVENTS",
-    description: "Discover upcoming S.I.R.U.S. activities and manage your participation.",
-    href: "/events",
+    description:
+      "Explore upcoming S.I.R.U.S. events and register for activities.",
+    href: "/dashboard/events",
   },
   {
     number: "02",
     title: "ATTENDANCE",
-    description: "Your attendance records and participation history will appear here.",
+    description:
+      "Check your S.I.R.U.S. attendance using your VTU number.",
     href: "/dashboard/attendance",
   },
-
-  
-
 ];
 
 export default function StudentDashboard() {
@@ -31,12 +30,12 @@ export default function StudentDashboard() {
           <h1>
             Student
             <br />
-            <span>Dashboard.</span>
+            <span>Portal.</span>
           </h1>
 
           <p>
-            Your workspace for research, innovation, collaboration and
-            participation within S.I.R.U.S.
+            Access S.I.R.U.S. events and check your participation and
+            attendance.
           </p>
         </div>
 
@@ -47,50 +46,34 @@ export default function StudentDashboard() {
         </div>
       </section>
 
-      {/* Profile / Stats */}
+      {/* Student Access */}
       <section className="dashboard-overview">
         <div className="student-profile-panel">
           <div className="profile-mark">S</div>
 
           <div>
-            <span className="panel-label">MEMBER PROFILE</span>
+            <span className="panel-label">STUDENT ACCESS</span>
 
-            <h2>Welcome back.</h2>
+            <h2>Welcome.</h2>
 
             <p>
-              Your member information will appear here after authentication
-              and onboarding.
+              Use your VTU number to access attendance information and
+              participate in S.I.R.U.S. activities.
             </p>
-
-            <Link href="/dashboard/profile" className="dashboard-link">
-              VIEW PROFILE <span>↗</span>
-            </Link>
           </div>
         </div>
 
         <div className="dashboard-stats">
           <div className="stat-panel">
-            <span>CLUB XP</span>
+            <span>EVENTS</span>
             <strong>—</strong>
-            <small>Awaiting activity data</small>
+            <small>Database connected later</small>
           </div>
 
           <div className="stat-panel">
             <span>ATTENDANCE</span>
             <strong>—</strong>
-            <small>Awaiting attendance data</small>
-          </div>
-
-          <div className="stat-panel">
-            <span>EVENTS</span>
-            <strong>—</strong>
-            <small>Participation data</small>
-          </div>
-
-          <div className="stat-panel">
-            <span>PROJECTS</span>
-            <strong>—</strong>
-            <small>Project data</small>
+            <small>Attendance data</small>
           </div>
         </div>
       </section>
@@ -131,7 +114,7 @@ export default function StudentDashboard() {
       {/* Upcoming Events */}
       <section className="dashboard-events">
         <div className="section-heading compact">
-          <span>02 / ACTIVITY</span>
+          <span>02 / EVENTS</span>
 
           <h2>Upcoming events.</h2>
         </div>
@@ -143,8 +126,7 @@ export default function StudentDashboard() {
           </div>
 
           <p>
-            Events published by S.I.R.U.S. will automatically appear in your
-            dashboard.
+            Published S.I.R.U.S. events will automatically appear here.
           </p>
 
           <Link href="/events" className="dashboard-link">
@@ -153,21 +135,25 @@ export default function StudentDashboard() {
         </div>
       </section>
 
-      {/* Recent Activity */}
+      {/* Attendance */}
       <section className="dashboard-activity">
         <div className="section-heading compact">
-          <span>03 / ACTIVITY LOG</span>
+          <span>03 / ATTENDANCE</span>
 
-          <h2>Recent activity.</h2>
+          <h2>Attendance access.</h2>
         </div>
 
         <div className="activity-empty">
-          <span>NO ACTIVITY RECORDED</span>
+          <span>VTU NUMBER REQUIRED</span>
 
           <p>
-            Your event participation, research activity, project updates and
-            other club activity will appear here.
+            Enter your VTU number in the attendance portal to view your
+            attendance records.
           </p>
+
+          <Link href="/dashboard/attendance" className="dashboard-link">
+            CHECK ATTENDANCE <span>↗</span>
+          </Link>
         </div>
       </section>
 

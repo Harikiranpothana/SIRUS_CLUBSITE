@@ -7,7 +7,6 @@ const links = [
   { label: "About", href: "/about" },
   { label: "Events", href: "/events" },
   { label: "Roadmap", href: "/roadmap" },
-  { label: "Hall of Fame", href: "/hall-of-fame" },
   { label: "Gallery", href: "/gallery" },
 ];
 
@@ -35,8 +34,8 @@ export default function Navbar() {
         </nav>
 
         <div className="nav-actions">
-          <Link href="/login" className="login-link">
-            Login
+          <Link href="/admin/login" className="login-link">
+            ADMIN
           </Link>
 
           <button

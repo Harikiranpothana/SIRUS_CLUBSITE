@@ -21,13 +21,13 @@ export default function StudentAttendancePage() {
           </h1>
 
           <p>
-            View your attendance records and participate in active S.I.R.U.S.
-            attendance sessions.
+            Check in to active S.I.R.U.S. attendance sessions and view
+            attendance records associated with your VTU number.
           </p>
         </div>
 
         <div className="student-attendance-status">
-          <span>STATUS</span>
+          <span>SESSION STATUS</span>
           <strong>NO ACTIVE SESSION</strong>
         </div>
       </section>
@@ -59,17 +59,17 @@ export default function StudentAttendancePage() {
         </div>
       </section>
 
-      {/* Active attendance */}
+      {/* Student identification */}
       <section className="student-attendance-session">
         <div className="student-attendance-heading">
           <div>
-            <span>01 / ACTIVE SESSION</span>
+            <span>01 / STUDENT IDENTIFICATION</span>
 
-            <h2>Attendance check-in.</h2>
+            <h2>Enter your VTU number.</h2>
           </div>
 
           <span className="student-attendance-db-status">
-            SESSION / NOT CONNECTED
+            DATABASE / NOT CONNECTED
           </span>
         </div>
 
@@ -79,14 +79,26 @@ export default function StudentAttendancePage() {
           </div>
 
           <div>
-            <span>NO ACTIVE SESSION</span>
+            <span>VTU IDENTIFICATION</span>
 
-            <h3>There is no attendance session available.</h3>
+            <h3>Attendance is linked to your VTU number.</h3>
 
             <p>
-              When an administrator starts an attendance session, the
-              check-in option will become available here.
+              Enter your VTU number before checking in. The system will verify
+              the student record and the active attendance session before
+              recording attendance.
             </p>
+
+            <label className="student-attendance-vtu-field">
+              VTU NUMBER
+              <input
+                type="text"
+                name="vtu_id"
+                placeholder="Enter VTU number"
+                inputMode="numeric"
+                autoComplete="off"
+              />
+            </label>
 
             <button
               type="button"
@@ -125,8 +137,8 @@ export default function StudentAttendancePage() {
             <h3>No attendance records available.</h3>
 
             <p>
-              Your attendance history will appear here after the attendance
-              system is connected.
+              Enter your VTU number to retrieve attendance information after
+              the attendance system is connected.
             </p>
           </div>
         </div>
@@ -149,8 +161,8 @@ export default function StudentAttendancePage() {
             <h3>SESSION</h3>
 
             <p>
-              An administrator starts an attendance session for a club
-              activity or event.
+              An administrator creates and activates an attendance session for
+              an S.I.R.U.S. event or activity.
             </p>
           </div>
 
@@ -160,7 +172,7 @@ export default function StudentAttendancePage() {
             <h3>QR CODE</h3>
 
             <p>
-              A temporary attendance QR code is generated for the active
+              A temporary QR code is generated for the active attendance
               session.
             </p>
           </div>
@@ -168,11 +180,11 @@ export default function StudentAttendancePage() {
           <div>
             <span>03</span>
 
-            <h3>CHECK-IN</h3>
+            <h3>VERIFY</h3>
 
             <p>
-              The student scans the active QR code through the S.I.R.U.S.
-              portal.
+              The student provides their VTU number and scans the active QR
+              code to request attendance.
             </p>
           </div>
 
@@ -182,8 +194,8 @@ export default function StudentAttendancePage() {
             <h3>RECORD</h3>
 
             <p>
-              The attendance record is stored and becomes part of the
-              student's attendance history.
+              The system validates the session, student and duplicate check-in
+              before recording attendance.
             </p>
           </div>
         </div>
@@ -200,9 +212,10 @@ export default function StudentAttendancePage() {
         </h2>
 
         <p>
-          Attendance will be tied to authenticated student accounts and
-          administrator-created sessions. The system will validate the active
-          session before recording attendance.
+          Attendance is identified using the student's VTU number. An active
+          administrator-created session must be valid before a check-in is
+          recorded, and duplicate attendance for the same session is
+          prevented.
         </p>
       </section>
     </main>
