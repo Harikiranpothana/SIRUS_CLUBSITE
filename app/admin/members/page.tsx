@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-type StudentStatus = "pending" | "approved" | "rejected";
+type MemberStatus = "pending" | "approved" | "rejected";
 
 type Student = {
   id: string;
@@ -12,62 +12,82 @@ type Student = {
   name: string;
   phone: string;
   year_of_study: number;
-  status: StudentStatus;
+  status: MemberStatus;
   created_at: string;
   updated_at: string;
 };
 
-const memberFilters = ["ALL", "PENDING", "APPROVED", "REJECTED"] as const;
+const STUDENT_COLUMNS =
+  "id, vtu_id, name, phone, year_of_study, status, created_at, updated_at";
 
-type MemberFilter = (typeof memberFilters)[number];
+const MEMBER_FILTERS = ["ALL", "PENDING", "APPROVED", "REJECTED"] as const;
 
-export default function MembersPage() {
+function formatDate(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "—";
+
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
+
+function formatStatus(status: MemberStatus) {
+  return status.toUpperCase();
+}
+
+export default function MembersAdminPage() {
+  const supabase = useMemo(() => createClient(), []);
+
   const [students, setStudents] = useState<Student[]>([]);
-  const [activeFilter, setActiveFilter] =
-    useState<MemberFilter>("ALL");
-
-  const [search, setSearch] = useState("");
-
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState<string | null>(
-    null
-  );
-
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [activeFilter, setActiveFilter] =
+    useState<(typeof MEMBER_FILTERS)[number]>("ALL");
 
-  const supabase = createClient();
-
-  async function loadStudents() {
+  const loadStudents = useCallback(async () => {
     setLoading(true);
     setError("");
 
     const { data, error: fetchError } = await supabase
       .from("students")
-      .select(
-        "id, vtu_id, name, phone, year_of_study, status, created_at, updated_at"
-      )
+      .select(STUDENT_COLUMNS)
       .order("created_at", { ascending: false });
 
     if (fetchError) {
-      console.error("Student fetch error:", fetchError);
-      setError("Unable to load student records.");
+      console.error("Members fetch error:", fetchError);
       setStudents([]);
+      setError(fetchError.message || "Unable to load member records.");
       setLoading(false);
       return;
     }
 
     setStudents((data ?? []) as Student[]);
     setLoading(false);
-  }
+  }, [supabase]);
 
   useEffect(() => {
-    loadStudents();
-  }, []);
+    void loadStudents();
+  }, [loadStudents]);
 
-  async function updateStudentStatus(
-    studentId: string,
-    status: "approved" | "rejected"
-  ) {
+  async function updateStatus(studentId: string, status: MemberStatus) {
+    const student = students.find((item) => item.id === studentId);
+
+    if (!student || student.status === status) return;
+
+    const action =
+      status === "approved"
+        ? "approve this student application"
+        : status === "rejected"
+          ? "reject this student application"
+          : "move this student back to pending";
+
+    if (!window.confirm(`Are you sure you want to ${action}?`)) return;
+
     setActionLoading(studentId);
     setError("");
 
@@ -77,20 +97,17 @@ export default function MembersPage() {
       .eq("id", studentId);
 
     if (updateError) {
-      console.error("Student status update error:", updateError);
-      setError("Unable to update the student status.");
+      console.error("Member status update error:", updateError);
+      setError(updateError.message || "Unable to update member status.");
       setActionLoading(null);
       return;
     }
 
-    setStudents((currentStudents) =>
-      currentStudents.map((student) =>
-        student.id === studentId
-          ? {
-              ...student,
-              status,
-            }
-          : student
+    setStudents((current) =>
+      current.map((item) =>
+        item.id === studentId
+          ? { ...item, status, updated_at: new Date().toISOString() }
+          : item
       )
     );
 
@@ -98,7 +115,7 @@ export default function MembersPage() {
   }
 
   const filteredStudents = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase();
+    const term = search.trim().toLowerCase();
 
     return students.filter((student) => {
       const matchesStatus =
@@ -106,69 +123,45 @@ export default function MembersPage() {
         student.status === activeFilter.toLowerCase();
 
       const matchesSearch =
-        !normalizedSearch ||
-        student.name.toLowerCase().includes(normalizedSearch) ||
-        student.vtu_id.toLowerCase().includes(normalizedSearch);
+        !term ||
+        student.name.toLowerCase().includes(term) ||
+        student.vtu_id.toLowerCase().includes(term) ||
+        student.phone.toLowerCase().includes(term);
 
       return matchesStatus && matchesSearch;
     });
   }, [students, activeFilter, search]);
 
-  const totalStudents = students.length;
-
-  const pendingStudents = students.filter(
+  const totalMembers = students.length;
+  const pendingMembers = students.filter(
     (student) => student.status === "pending"
   ).length;
-
-  const approvedStudents = students.filter(
+  const approvedMembers = students.filter(
     (student) => student.status === "approved"
   ).length;
-
-  const rejectedStudents = students.filter(
+  const rejectedMembers = students.filter(
     (student) => student.status === "rejected"
   ).length;
 
-  function formatDate(date: string) {
-    return new Intl.DateTimeFormat("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    }).format(new Date(date));
-  }
-
-  function getYearLabel(year: number) {
-    const labels: Record<number, string> = {
-      1: "FIRST YEAR",
-      2: "SECOND YEAR",
-      3: "THIRD YEAR",
-      4: "FOURTH YEAR",
-    };
-
-    return labels[year] ?? `YEAR ${year}`;
-  }
-
   return (
     <main className="members-admin-page">
-      {/* Header */}
       <section className="members-header">
         <div>
           <Link href="/admin" className="members-back-link">
             ← MANAGEMENT PORTAL
           </Link>
 
-          <span className="members-eyebrow">
-            ADMIN / STUDENTS
-          </span>
+          <span className="members-eyebrow">MANAGEMENT / MEMBERS</span>
 
           <h1>
-            Student
+            Member
             <br />
-            <span>Management.</span>
+            <span>Manager.</span>
           </h1>
 
           <p>
-            Review student onboarding requests and manage approved
-            S.I.R.U.S. students.
+            Review student applications, approve membership and manage the
+            S.I.R.U.S. student directory.
           </p>
         </div>
 
@@ -178,81 +171,58 @@ export default function MembersPage() {
         </div>
       </section>
 
-      {/* Overview */}
       <section className="members-overview">
         <div className="member-stat">
-          <span>TOTAL STUDENTS</span>
-
-          <strong>
-            {loading ? "—" : totalStudents}
-          </strong>
-
+          <span>TOTAL MEMBERS</span>
+          <strong>{loading ? "—" : totalMembers}</strong>
           <small>All student records</small>
         </div>
 
         <div className="member-stat">
           <span>PENDING</span>
-
-          <strong>
-            {loading ? "—" : pendingStudents}
-          </strong>
-
-          <small>Awaiting admin review</small>
+          <strong>{loading ? "—" : pendingMembers}</strong>
+          <small>Awaiting review</small>
         </div>
 
         <div className="member-stat">
           <span>APPROVED</span>
-
-          <strong>
-            {loading ? "—" : approvedStudents}
-          </strong>
-
-          <small>Approved students</small>
+          <strong>{loading ? "—" : approvedMembers}</strong>
+          <small>Active members</small>
         </div>
 
         <div className="member-stat">
           <span>REJECTED</span>
-
-          <strong>
-            {loading ? "—" : rejectedStudents}
-          </strong>
-
-          <small>Rejected submissions</small>
+          <strong>{loading ? "—" : rejectedMembers}</strong>
+          <small>Rejected applications</small>
         </div>
       </section>
 
-      {/* Student Database */}
       <section className="members-directory">
         <div className="members-section-heading">
           <div>
-            <span>01 / STUDENT DATABASE</span>
-
+            <span>01 / MEMBER DATABASE</span>
             <h2>Students.</h2>
           </div>
 
           <span className="members-database-status">
-            DATABASE / CONNECTED
+            {loading ? "DATABASE / LOADING" : "DATABASE / CONNECTED"}
           </span>
         </div>
 
-        {/* Search / filters */}
         <div className="members-toolbar">
           <div className="members-search">
             <span>SEARCH</span>
-
             <input
               type="text"
-              placeholder="Search by name or VTU number..."
+              placeholder="Name, VTU ID or mobile..."
               aria-label="Search students"
               value={search}
-              onChange={(event) =>
-                setSearch(event.target.value)
-              }
+              onChange={(event) => setSearch(event.target.value)}
             />
           </div>
 
           <div className="members-filters">
-            {memberFilters.map((filter) => (
+            {MEMBER_FILTERS.map((filter) => (
               <button
                 key={filter}
                 type="button"
@@ -267,230 +237,180 @@ export default function MembersPage() {
           </div>
         </div>
 
-        {/* Error */}
         {error && (
-          <div className="login-error" role="alert">
-            {error}
+          <div className="members-error" role="alert">
+            <span>DATABASE ERROR</span>
+            <p>{error}</p>
           </div>
         )}
 
-        {/* Loading */}
-        {loading && (
+        {loading ? (
           <div className="members-empty">
-            <div className="members-empty-index">...</div>
-
+            <div className="members-empty-index">01</div>
             <div>
-              <span>STUDENT RECORDS</span>
-
+              <span>DATABASE / LOADING</span>
               <h3>Loading student records.</h3>
-
-              <p>
-                Retrieving student data from the S.I.R.U.S.
-                database.
-              </p>
+              <p>Fetching the current S.I.R.U.S. member database.</p>
             </div>
           </div>
-        )}
-
-        {/* Empty */}
-        {!loading && filteredStudents.length === 0 && (
+        ) : filteredStudents.length === 0 ? (
           <div className="members-empty">
             <div className="members-empty-index">00</div>
-
             <div>
-              <span>STUDENT RECORDS</span>
-
+              <span>
+                {students.length === 0
+                  ? "DATABASE / EMPTY"
+                  : "SEARCH / NO MATCH"}
+              </span>
               <h3>
                 {students.length === 0
-                  ? "No student records available."
+                  ? "No student applications yet."
                   : "No matching students."}
               </h3>
-
               <p>
                 {students.length === 0
-                  ? "Student onboarding submissions will appear here once they are submitted."
-                  : "Try changing the search term or selecting a different status filter."}
+                  ? "Students submitted through the public Join page will appear here after submission."
+                  : "Try another name, VTU ID, mobile number or status filter."}
               </p>
             </div>
           </div>
-        )}
+        ) : (
+          <div className="members-record-list">
+            {filteredStudents.map((student, index) => {
+              const busy = actionLoading === student.id;
 
-        {/* Student records */}
-        {!loading && filteredStudents.length > 0 && (
-          <div className="members-table">
-            {filteredStudents.map((student) => (
-              <article
-                className="member-record"
-                key={student.id}
-              >
-                <div className="member-record-main">
-                  <div className="member-record-number">
-                    {student.vtu_id}
+              return (
+                <article className="member-record" key={student.id}>
+                  <div className="member-record-index">
+                    {String(index + 1).padStart(2, "0")}
                   </div>
 
-                  <div className="member-record-info">
-                    <h3>{student.name}</h3>
+                  <div className="member-record-main">
+                    <div className="member-record-heading">
+                      <div>
+                        <span className="member-record-label">STUDENT</span>
+                        <h3>{student.name}</h3>
+                      </div>
 
-                    <div className="member-record-meta">
-                      <span>{student.phone}</span>
-
-                      <span>
-                        {getYearLabel(student.year_of_study)}
-                      </span>
-
-                      <span>
-                        SUBMITTED {formatDate(student.created_at)}
+                      <span
+                        className={`member-status member-status-${student.status}`}
+                      >
+                        {formatStatus(student.status)}
                       </span>
                     </div>
+
+                    <div className="member-record-details">
+                      <div>
+                        <span>VTU ID</span>
+                        <strong>{student.vtu_id}</strong>
+                      </div>
+
+                      <div>
+                        <span>MOBILE</span>
+                        <strong>{student.phone}</strong>
+                      </div>
+
+                      <div>
+                        <span>YEAR</span>
+                        <strong>{student.year_of_study}</strong>
+                      </div>
+
+                      <div>
+                        <span>SUBMITTED</span>
+                        <strong>{formatDate(student.created_at)}</strong>
+                      </div>
+                    </div>
                   </div>
-                </div>
 
-                <div className="member-record-actions">
-                  <span
-                    className={`member-status member-status-${student.status}`}
-                  >
-                    {student.status.toUpperCase()}
-                  </span>
-
-                  {student.status === "pending" && (
+                  <div className="member-record-actions">
                     <div className="member-action-buttons">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          updateStudentStatus(
-                            student.id,
-                            "approved"
-                          )
-                        }
-                        disabled={actionLoading === student.id}
-                      >
-                        {actionLoading === student.id
-                          ? "UPDATING..."
-                          : "APPROVE"}
-                      </button>
+                      {student.status !== "approved" && (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => updateStatus(student.id, "approved")}
+                        >
+                          {busy ? "SAVING..." : "APPROVE"}
+                        </button>
+                      )}
 
-                      <button
-                        type="button"
-                        onClick={() =>
-                          updateStudentStatus(
-                            student.id,
-                            "rejected"
-                          )
-                        }
-                        disabled={actionLoading === student.id}
-                      >
-                        {actionLoading === student.id
-                          ? "UPDATING..."
-                          : "REJECT"}
-                      </button>
+                      {student.status !== "rejected" && (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => updateStatus(student.id, "rejected")}
+                        >
+                          {busy ? "SAVING..." : "REJECT"}
+                        </button>
+                      )}
+
+                      {student.status !== "pending" && (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => updateStatus(student.id, "pending")}
+                        >
+                          {busy ? "SAVING..." : "PENDING"}
+                        </button>
+                      )}
                     </div>
-                  )}
-                </div>
-              </article>
-            ))}
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
       </section>
 
-      {/* Onboarding Process */}
       <section className="member-lifecycle">
-        <div className="members-section-heading">
-          <div>
-            <span>02 / STUDENT ONBOARDING</span>
-
-            <h2>Review process.</h2>
-          </div>
-        </div>
+        <span>02 / APPLICATION LIFECYCLE</span>
+        <h2>One controlled path.</h2>
 
         <div className="member-lifecycle-grid">
           <div>
             <span>01</span>
-
             <h3>SUBMIT</h3>
-
-            <p>
-              A student submits their name, mobile number, VTU
-              number and year of study through the public S.I.R.U.S.
-              portal.
-            </p>
+            <p>Student submits the required onboarding information.</p>
           </div>
 
           <div>
             <span>02</span>
-
             <h3>REVIEW</h3>
-
-            <p>
-              The submitted student record enters the pending state
-              and is reviewed by an administrator.
-            </p>
+            <p>Application enters the administrator review queue.</p>
           </div>
 
           <div>
             <span>03</span>
-
             <h3>DECISION</h3>
-
-            <p>
-              The administrator approves or rejects the onboarding
-              request.
-            </p>
+            <p>Administrator approves or rejects the application.</p>
           </div>
 
           <div>
             <span>04</span>
-
             <h3>APPROVED</h3>
-
-            <p>
-              Approved students become official S.I.R.U.S.
-              students and can use the student portal.
-            </p>
+            <p>Approved students become active S.I.R.U.S. members.</p>
           </div>
         </div>
       </section>
 
-      {/* Student Record Information */}
       <section className="members-permissions">
-        <span>STUDENT MANAGEMENT</span>
-
-        <h2>Administrator control.</h2>
+        <span>03 / ACCESS CONTROL</span>
+        <h2>Administrator membership management.</h2>
 
         <div className="member-permission-grid">
           <div>
-            <span>PENDING</span>
-
+            <span>ADMIN</span>
             <p>
-              Pending student submissions can be reviewed by
-              administrators before onboarding is approved.
+              Administrators can review student applications and change their
+              membership status.
             </p>
           </div>
 
           <div>
-            <span>APPROVED</span>
-
+            <span>STUDENT</span>
             <p>
-              Approved student records are retained in the official
-              student database and can be managed by administrators.
-            </p>
-          </div>
-
-          <div>
-            <span>REJECTED</span>
-
-            <p>
-              Rejected submissions remain recorded with a rejected
-              status and are not treated as approved students.
-            </p>
-          </div>
-
-          <div>
-            <span>IDENTITY</span>
-
-            <p>
-              Student records are identified primarily through the
-              VTU number, with name, mobile number and year of study
-              stored alongside it.
+              Students submit applications publicly and do not receive an
+              administrative login.
             </p>
           </div>
         </div>

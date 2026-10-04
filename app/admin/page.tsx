@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const adminModules = [
   {
@@ -31,7 +32,159 @@ const adminModules = [
   },
 ];
 
-export default function AdminDashboard() {
+type ActivityItem = {
+  id: string;
+  type: string;
+  label: string;
+  description: string;
+  created_at: string;
+};
+
+function formatActivityDate(date: string) {
+  return new Date(date).toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+async function getDashboardData() {
+  const supabase = createAdminClient();
+
+  const [
+    studentsResult,
+    pendingStudentsResult,
+    eventsResult,
+    attendanceResult,
+    recentStudentsResult,
+    recentEventsResult,
+    recentAttendanceResult,
+    recentGalleryResult,
+  ] = await Promise.all([
+    supabase
+      .from("students")
+      .select("id", { count: "exact", head: true }),
+
+    supabase
+      .from("students")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending"),
+
+    supabase
+      .from("events")
+      .select("id", { count: "exact", head: true }),
+
+    supabase
+      .from("attendance_records")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "present"),
+
+    supabase
+      .from("students")
+      .select("id,name,status,created_at")
+      .order("created_at", { ascending: false })
+      .limit(5),
+
+    supabase
+      .from("events")
+      .select("id,title,status,created_at")
+      .order("created_at", { ascending: false })
+      .limit(5),
+
+    supabase
+      .from("attendance_records")
+      .select("id,checked_in_at,method,status")
+      .order("checked_in_at", { ascending: false })
+      .limit(5),
+
+    supabase
+      .from("gallery_media")
+      .select("id,title,status,created_at")
+      .order("created_at", { ascending: false })
+      .limit(5),
+  ]);
+
+  const errors = [
+    studentsResult.error,
+    pendingStudentsResult.error,
+    eventsResult.error,
+    attendanceResult.error,
+    recentStudentsResult.error,
+    recentEventsResult.error,
+    recentAttendanceResult.error,
+    recentGalleryResult.error,
+  ].filter(Boolean);
+
+  if (errors.length > 0) {
+    console.error("Admin dashboard database error:", errors);
+  }
+
+  const activities: ActivityItem[] = [];
+
+  for (const student of recentStudentsResult.data ?? []) {
+    activities.push({
+      id: `student-${student.id}`,
+      type: "MEMBER",
+      label: student.name,
+      description:
+        student.status === "pending"
+          ? "Student onboarding request submitted."
+          : `Student status: ${student.status}.`,
+      created_at: student.created_at,
+    });
+  }
+
+  for (const event of recentEventsResult.data ?? []) {
+    activities.push({
+      id: `event-${event.id}`,
+      type: "EVENT",
+      label: event.title,
+      description: `Event status: ${event.status}.`,
+      created_at: event.created_at,
+    });
+  }
+
+  for (const attendance of recentAttendanceResult.data ?? []) {
+    activities.push({
+      id: `attendance-${attendance.id}`,
+      type: "ATTENDANCE",
+      label: "Attendance recorded",
+      description: `Check-in method: ${attendance.method}.`,
+      created_at: attendance.checked_in_at,
+    });
+  }
+
+  for (const media of recentGalleryResult.data ?? []) {
+    activities.push({
+      id: `gallery-${media.id}`,
+      type: "GALLERY",
+      label: media.title || "Untitled media",
+      description: `Gallery media status: ${media.status}.`,
+      created_at: media.created_at,
+    });
+  }
+
+  activities.sort(
+    (a, b) =>
+      new Date(b.created_at).getTime() -
+      new Date(a.created_at).getTime(),
+  );
+
+  return {
+    students: studentsResult.count ?? 0,
+    pendingStudents: pendingStudentsResult.count ?? 0,
+    events: eventsResult.count ?? 0,
+    attendance: attendanceResult.count ?? 0,
+    activities: activities.slice(0, 8),
+    hasError: errors.length > 0,
+  };
+}
+
+export default async function AdminDashboard() {
+  const dashboard = await getDashboardData();
+
   return (
     <main className="admin-dashboard">
       {/* Header */}
@@ -74,26 +227,34 @@ export default function AdminDashboard() {
         <div className="admin-overview-grid">
           <div className="admin-stat">
             <span>STUDENTS</span>
-            <strong>—</strong>
-            <small>Database data</small>
+
+            <strong>{dashboard.students}</strong>
+
+            <small>Total student records</small>
           </div>
 
           <div className="admin-stat">
             <span>PENDING ONBOARDING</span>
-            <strong>—</strong>
+
+            <strong>{dashboard.pendingStudents}</strong>
+
             <small>Awaiting approval</small>
           </div>
 
           <div className="admin-stat">
             <span>EVENTS</span>
-            <strong>—</strong>
-            <small>Database data</small>
+
+            <strong>{dashboard.events}</strong>
+
+            <small>Total event records</small>
           </div>
 
           <div className="admin-stat">
             <span>ATTENDANCE</span>
-            <strong>—</strong>
-            <small>Database data</small>
+
+            <strong>{dashboard.attendance}</strong>
+
+            <small>Present check-ins</small>
           </div>
         </div>
       </section>
@@ -166,16 +327,48 @@ export default function AdminDashboard() {
           <h2>Recent activity.</h2>
         </div>
 
-        <div className="admin-empty">
-          <span>SYSTEM ACTIVITY</span>
+        {dashboard.activities.length === 0 ? (
+          <div className="admin-empty">
+            <span>SYSTEM ACTIVITY</span>
 
-          <h3>No activity available.</h3>
+            <h3>No activity available.</h3>
 
-          <p>
-            Administrative activity will appear here once the backend is
-            connected.
+            <p>
+              Administrative activity will appear here once records are
+              created.
+            </p>
+          </div>
+        ) : (
+          <div className="admin-activity-list">
+            {dashboard.activities.map((activity) => (
+              <article
+                key={activity.id}
+                className="admin-activity-item"
+              >
+                <div className="admin-activity-type">
+                  <span>{activity.type}</span>
+                </div>
+
+                <div className="admin-activity-content">
+                  <h3>{activity.label}</h3>
+
+                  <p>{activity.description}</p>
+                </div>
+
+                <time dateTime={activity.created_at}>
+                  {formatActivityDate(activity.created_at)}
+                </time>
+              </article>
+            ))}
+          </div>
+        )}
+
+        {dashboard.hasError && (
+          <p className="admin-dashboard-warning">
+            Some dashboard data could not be loaded. Check the server logs
+            for details.
           </p>
-        </div>
+        )}
       </section>
 
       {/* Footer */}
